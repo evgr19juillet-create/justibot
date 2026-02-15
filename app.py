@@ -46,8 +46,8 @@ def envoyer_mail(destinataire, sujet, corps):
         return False, f"Erreur d'envoi : {str(e)}"
 
 def analyse_ia(text):
-    # CORRECTION : Utilisation du modèle standard pour éviter l'erreur 404
-    model = genai.GenerativeModel('gemini-pro')
+    # CORRECTION : Utilisation du modèle flash (plus rapide et stable)
+    model = genai.GenerativeModel('gemini-1.5-flash')
     try:
         prompt = f"Analyse ce problème juridique et classe-le (ex: Remboursement, Non-livraison, Vice caché). Réponds juste par la catégorie. Contexte: {text}"
         response = model.generate_content(prompt)
@@ -56,8 +56,8 @@ def analyse_ia(text):
         return "Litige commercial"
 
 def generer_courrier(probleme, categorie, user_infos):
-    # CORRECTION : Utilisation du modèle standard
-    model = genai.GenerativeModel('gemini-pro')
+    # CORRECTION : Utilisation du modèle flash
+    model = genai.GenerativeModel('gemini-1.5-flash')
     date_jour = datetime.now().strftime("%d/%m/%Y")
     
     # Construction du prompt avec les infos du formulaire
