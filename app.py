@@ -18,7 +18,9 @@ st.set_page_config(
 # --- PROTECTION ANTI-COPIE (CSS & JS) ---
 st.markdown("""
 <style>
+    /* Bloque la sélection partout */
     * { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
+    /* Autorise la sélection UNIQUEMENT si la case n'est pas désactivée */
     input, textarea:not(:disabled) { -webkit-user-select: text !important; user-select: text !important; }
 </style>
 <script> document.addEventListener('contextmenu', event => event.preventDefault()); </script>
@@ -86,8 +88,8 @@ def envoyer_mail(destinataire, sujet, corps):
         return False, f"Erreur d'envoi : {str(e)}"
 
 def analyse_ia(text):
-    # CORRECTION ICI : Utilisation du nom complet ou du modèle très stable
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    # RETOUR AU MODÈLE QUI MARCHE (gemini-pro)
+    model = genai.GenerativeModel('gemini-pro')
     try:
         prompt = f"Analyse ce problème juridique et classe-le. Réponds juste par la catégorie. Contexte: {text}"
         return model.generate_content(prompt).text.strip()
@@ -95,8 +97,8 @@ def analyse_ia(text):
         return "Litige commercial"
 
 def generer_courrier(probleme, categorie, user_infos):
-    # CORRECTION ICI : Utilisation du nom complet ou du modèle très stable
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    # RETOUR AU MODÈLE QUI MARCHE (gemini-pro)
+    model = genai.GenerativeModel('gemini-pro')
     date_jour = datetime.now().strftime("%d/%m/%Y")
     prompt = f"""
     Agis comme un avocat expert en droit de la consommation français. Rédige une MISE EN DEMEURE formelle.
@@ -142,7 +144,7 @@ if choix_page == "✍️ Générateur de Courrier":
                     st.session_state['courrier'] = generer_courrier(message_litige, cat, infos_client)
                     st.session_state['sujet'] = f"MISE EN DEMEURE - {cat} - {nom_client}"
                     
-                    # On génère le lien de paiement SumUp en arrière-plan
+                    # On génère le lien de paiement SumUp
                     lien_sumup = creer_paiement_sumup(montant=5.00)
                     if lien_sumup:
                         st.session_state['lien_paiement'] = lien_sumup
@@ -154,13 +156,14 @@ if choix_page == "✍️ Générateur de Courrier":
         st.divider()
         if not est_paye:
             st.subheader("🔒 Votre courrier est prêt !")
-            st.warning("Pour débloquer le texte complet, l'envoyer par email et le télécharger, merci de régler les frais de service.")
-            extrait = st.session_state['courrier'][:200] + "\n\n[... TEXTE MASQUÉ ... PAIEMENT REQUIS ...]"
-            st.text_area("Aperçu (Copie désactivée) :", value=extrait, height=150, disabled=True)
+            st.warning("Pour débloquer l'envoi, le téléchargement et les modifications, merci de régler les frais de service.")
+            
+            # AFFICHAGE DU TEXTE COMPLET (MAIS BLOQUÉ À LA COPIE)
+            st.text_area("Aperçu complet (Lecture seule, Copie désactivée) :", value=st.session_state['courrier'], height=400, disabled=True)
             
             if 'lien_paiement' in st.session_state:
-                st.link_button("💳 Payer avec SumUp (5,00€)", st.session_state['lien_paiement'], type="primary", use_container_width=True)
-                st.caption("Une fois le paiement effectué, vous serez redirigé automatiquement ici.")
+                st.link_button("💳 Payer avec SumUp (5,00€) pour débloquer", st.session_state['lien_paiement'], type="primary", use_container_width=True)
+                st.caption("Une fois le paiement effectué, vous serez redirigé automatiquement ici pour envoyer ou télécharger le fichier.")
         else:
             st.subheader("📝 Votre courrier débloqué")
             st.success("✅ Paiement confirmé ! Vous pouvez maintenant modifier et envoyer votre courrier.")
