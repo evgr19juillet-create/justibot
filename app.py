@@ -4,6 +4,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+import requests
+import uuid
 
 # --- 1. CONFIGURATION DE LA PAGE ---
 st.set_page_config(
@@ -13,18 +15,59 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --- PROTECTION ANTI-COPIE (CSS & JS) ---
+st.markdown("""
+<style>
+    * { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
+    input, textarea:not(:disabled) { -webkit-user-select: text !important; user-select: text !important; }
+</style>
+<script> document.addEventListener('contextmenu', event => event.preventDefault()); </script>
+""", unsafe_allow_html=True)
+
 # --- 2. RÉCUPÉRATION DES SECRETS ---
 try:
     api_key = st.secrets["GEMINI_KEY"]
     user_email = st.secrets["EMAIL_ADDRESS"]
     user_password = st.secrets["EMAIL_PASSWORD"]
-except Exception:
-    st.error("⚠️ Les secrets ne sont pas configurés. Allez dans Settings > Secrets sur Streamlit Cloud.")
+    sumup_api_key = st.secrets["SUMUP_API_KEY"]
+    sumup_merchant_code = st.secrets["SUMUP_MERCHANT_CODE"]
+except FileNotFoundError:
+    st.error("⚠️ Les secrets (clés) ne sont pas configurés. Vérifiez sur Streamlit.")
     st.stop()
 
 genai.configure(api_key=api_key)
 
-# --- 3. FONCTIONS ---
+# --- 3. LOGIQUE DE PAIEMENT ---
+query_params = st.query_params
+est_paye = query_params.get("payment") == "success"
+
+# --- 4. FONCTIONS ---
+
+def creer_paiement_sumup(montant=5.00):
+    """Communique avec l'API SumUp pour générer un lien de paiement dynamique"""
+    url = "https://api.sumup.com/v0.1/checkouts"
+    headers = {
+        "Authorization": f"Bearer {sumup_api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "checkout_reference": str(uuid.uuid4()), # Crée un numéro de commande unique
+        "amount": montant,
+        "currency": "EUR",
+        "merchant_code": sumup_merchant_code,
+        "description": "Génération de Mise en Demeure - Justibots",
+        "return_url": "https://justibot.fr/?payment=success" # La redirection magique !
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code in [200, 201]:
+            checkout_id = response.json().get("id")
+            return f"https://pay.sumup.com/b2c/screen/#/{checkout_id}"
+        else:
+            return None
+    except:
+        return None
 
 def envoyer_mail(destinataire, sujet, corps):
     msg = MIMEMultipart()
@@ -32,9 +75,7 @@ def envoyer_mail(destinataire, sujet, corps):
     msg['To'] = destinataire
     msg['Subject'] = sujet
     msg.attach(MIMEText(corps, 'plain'))
-
     try:
-        # Configuration spécifique pour Hostinger
         server = smtplib.SMTP('smtp.hostinger.com', 587)
         server.starttls()
         server.login(user_email, user_password)
@@ -45,48 +86,28 @@ def envoyer_mail(destinataire, sujet, corps):
         return False, f"Erreur d'envoi : {str(e)}"
 
 def analyse_ia(text):
-    # CORRECTION : Utilisation du modèle gemini-2.5-flash
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     try:
-        prompt = f"Analyse ce problème juridique et classe-le (ex: Remboursement, Non-livraison, Vice caché). Réponds juste par la catégorie. Contexte: {text}"
-        response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception as e:
+        prompt = f"Analyse ce problème juridique et classe-le. Réponds juste par la catégorie. Contexte: {text}"
+        return model.generate_content(prompt).text.strip()
+    except:
         return "Litige commercial"
 
 def generer_courrier(probleme, categorie, user_infos):
-    # CORRECTION : Utilisation du modèle gemini-2.5-flash
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     date_jour = datetime.now().strftime("%d/%m/%Y")
-    
     prompt = f"""
-    Agis comme un avocat expert en droit de la consommation français.
-    Rédige une MISE EN DEMEURE formelle et juridique.
-    
-    EXPÉDITEUR :
-    Nom : {user_infos['nom']}
-    Adresse : {user_infos['adresse']}
-    Ville : {user_infos['ville']}
-    Email : {user_infos['email']}
-    
-    DATE : {date_jour}
-    MOTIF DU LITIGE : {categorie}
-    DÉTAILS DES FAITS : "{probleme}"
-    
-    CONSIGNES DE RÉDACTION :
-    1. Ton ferme et juridique.
-    2. Citer les articles pertinents du Code de la Consommation.
-    3. Exiger une résolution sous 8 jours sous peine de poursuites.
+    Agis comme un avocat expert en droit de la consommation français. Rédige une MISE EN DEMEURE formelle.
+    EXPÉDITEUR: Nom : {user_infos['nom']}, Adresse : {user_infos['adresse']}, Ville : {user_infos['ville']}, Email : {user_infos['email']}
+    DATE : {date_jour} | MOTIF : {categorie} | FAITS : "{probleme}"
+    CONSIGNES : En-tête complet, ton ferme juridique, cite articles de loi, résolution sous 8 jours, menace tribunal, signature.
     """
-    
     try:
-        response = model.generate_content(prompt)
-        return response.text
+        return model.generate_content(prompt).text
     except Exception as e:
-        return f"Erreur IA : {str(e)}"
+        return f"Erreur IA : {e}"
 
-# --- 4. INTERFACE ---
-
+# --- 5. INTERFACE ---
 with st.sidebar:
     st.title("🧭 Navigation")
     choix_page = st.radio("Aller vers :", ["✍️ Générateur de Courrier", "📚 Ressources Juridiques"])
@@ -98,36 +119,65 @@ if choix_page == "✍️ Générateur de Courrier":
     with st.sidebar:
         st.header("👤 Vos Coordonnées")
         nom_client = st.text_input("Nom & Prénom")
-        adresse_client = st.text_input("Adresse")
+        adresse_client = st.text_input("Adresse (Rue)")
         ville_client = st.text_input("Code Postal & Ville")
         email_client_perso = st.text_input("Votre Email")
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 1])
     with col1:
-        st.subheader("1. Le Problème")
-        message_litige = st.text_area("Décrivez la situation...", height=250)
+        message_litige = st.text_area("Expliquez la situation en détail...", height=250)
     with col2:
-        st.subheader("2. Le Destinataire")
         email_sav = st.text_input("Email du SAV adverse")
+        st.write("") 
         
         if st.button("Générer ma Mise en Demeure ⚡", type="primary", use_container_width=True):
             if not nom_client or not message_litige:
-                st.error("Veuillez remplir les informations manquantes.")
+                st.error("⚠️ Merci de remplir au moins votre NOM et la DESCRIPTION du problème.")
             else:
-                with st.spinner("Rédaction en cours..."):
+                with st.spinner("L'avocat IA rédige votre courrier..."):
                     cat = analyse_ia(message_litige)
-                    infos = {"nom": nom_client, "adresse": adresse_client, "ville": ville_client, "email": email_client_perso}
-                    st.session_state['courrier'] = generer_courrier(message_litige, cat, infos)
-                    st.session_state['sujet'] = f"MISE EN DEMEURE - {cat}"
+                    infos_client = {"nom": nom_client, "adresse": adresse_client, "ville": ville_client, "email": email_client_perso}
+                    st.session_state['courrier'] = generer_courrier(message_litige, cat, infos_client)
+                    st.session_state['sujet'] = f"MISE EN DEMEURE - {cat} - {nom_client}"
+                    
+                    # On génère le lien de paiement SumUp en arrière-plan
+                    lien_sumup = creer_paiement_sumup(montant=5.00)
+                    if lien_sumup:
+                        st.session_state['lien_paiement'] = lien_sumup
+                        st.success("Courrier généré avec succès ! Lisez les instructions ci-dessous.")
+                    else:
+                        st.error("⚠️ Erreur de connexion avec le terminal de paiement SumUp.")
 
     if 'courrier' in st.session_state:
         st.divider()
-        courrier_final = st.text_area("Vérifiez le texte :", value=st.session_state['courrier'], height=400)
-        if st.button("🚀 Envoyer le mail"):
-            ok, msg = envoyer_mail(email_sav, st.session_state['sujet'], courrier_final)
-            if ok: st.success(msg)
-            else: st.error(msg)
+        if not est_paye:
+            st.subheader("🔒 Votre courrier est prêt !")
+            st.warning("Pour débloquer le texte complet, l'envoyer par email et le télécharger, merci de régler les frais de service.")
+            extrait = st.session_state['courrier'][:200] + "\n\n[... TEXTE MASQUÉ ... PAIEMENT REQUIS ...]"
+            st.text_area("Aperçu (Copie désactivée) :", value=extrait, height=150, disabled=True)
+            
+            if 'lien_paiement' in st.session_state:
+                st.link_button("💳 Payer avec SumUp (5,00€)", st.session_state['lien_paiement'], type="primary", use_container_width=True)
+                st.caption("Une fois le paiement effectué, vous serez redirigé automatiquement ici.")
+        else:
+            st.subheader("📝 Votre courrier débloqué")
+            st.success("✅ Paiement confirmé ! Vous pouvez maintenant modifier et envoyer votre courrier.")
+            courrier_final = st.text_area("Relisez et modifiez si besoin :", value=st.session_state['courrier'], height=400)
+            sujet_final = st.text_input("Objet du mail :", value=st.session_state['sujet'])
+            
+            col_send, col_down = st.columns([1, 1])
+            with col_down:
+                st.download_button("📥 Télécharger le texte", data=courrier_final, file_name="Mise_en_demeure.txt", mime="text/plain", use_container_width=True)
+            with col_send:
+                if st.button("🚀 Envoyer le mail au SAV", use_container_width=True):
+                    if not email_sav:
+                        st.error("Il manque l'email du destinataire !")
+                    else:
+                        with st.spinner("Envoi en cours..."):
+                            ok, msg = envoyer_mail(email_sav, sujet_final, courrier_final)
+                            st.success(msg) if ok else st.error(msg)
 
 elif choix_page == "📚 Ressources Juridiques":
-    st.title("📚 Ressources Juridiques")
-    st.write("Consultez vos droits sur SignalConso ou le Code de la consommation.")
+    st.title("📚 Ressources & Droits")
+    st.markdown("Guides rapides pour comprendre vos droits avant d'agir.")
+    st.info("💡 Sélectionnez une rubrique pour en savoir plus dans le menu de gauche.")
