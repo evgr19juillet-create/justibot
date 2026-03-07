@@ -151,33 +151,34 @@ def generer_courrier(probleme, categorie, user_infos):
     model = genai.GenerativeModel(MODELE_AUTORISE)
     date_jour = datetime.now().strftime("%d/%m/%Y")
     
-    # LA NOUVELLE CONSIGNE : RÈGLES DE FER STRICTES
+    # LE NOUVEAU CERVEAU DE L'IA (MOULE STRICT)
     prompt = f"""
     Tu es un assistant juridique expert. Rédige une MISE EN DEMEURE formelle et définitive.
 
-    RÈGLE ABSOLUE N°1 (LES COORDONNÉES) :
-    Tu ne dois INVENTER AUCUNE ADRESSE, AUCUNE VILLE et AUCUN EMAIL. Tu dois utiliser STRICTEMENT ET UNIQUEMENT les informations suivantes pour l'en-tête de l'expéditeur en haut à gauche :
+    CONSIGNE ABSOLUE POUR L'EN-TÊTE :
+    Tu dois COMMENCER ta lettre en recopiant EXACTEMENT ce bloc de texte, mot pour mot, ligne par ligne. Ne change rien, n'invente rien d'autre :
+    
     {user_infos['nom']}
     {user_infos['adresse']}
     {user_infos['ville']}
     Email : {user_infos['email']}
-
-    RÈGLE ABSOLUE N°2 (LE DESTINATAIRE ET LE TEXTE) :
-    Ne mets JAMAIS de crochets [ ]. Ne demande pas à l'utilisateur de compléter quoi que ce soit. Pour le destinataire, écris simplement : "À l'attention du Service Client / SAV".
-
-    CONTEXTE DU LITIGE :
-    - Date : {date_jour}
-    - Objet : Mise en demeure - {categorie}
-    - Faits : "{probleme}"
-
-    CONSIGNES DE RÉDACTION :
-    - Rédige la lettre à la première personne du singulier ("Je").
-    - Adopte un ton formel, froid et menaçant juridiquement.
-    - Cite impérativement les articles de loi adaptés à la situation (Code de la Consommation, Code Civil...).
-    - Exige une résolution sous 8 jours, sous peine de saisine du tribunal compétent.
-    - Signe avec : {user_infos['nom']}
     
-    IMPORTANT : Génère UNIQUEMENT le texte de la lettre finale. Pas de blabla avant ou après.
+    À l'attention du Service Client / SAV
+    Date : {date_jour}
+
+    Objet : Mise en demeure formelle - {categorie}
+
+    Madame, Monsieur,
+    
+    (Rédige maintenant la suite de la lettre à la première personne du singulier "Je").
+    
+    CONSIGNES POUR LE TEXTE :
+    - Adopte un ton très formel, froid et menaçant juridiquement.
+    - Cite les articles de loi adaptés à ce problème (Code de la Consommation, Code Civil...).
+    - Exige la résolution du problème sous 8 jours, sous peine de saisine du tribunal compétent.
+    - Termine la lettre avec la signature : {user_infos['nom']}
+    
+    IMPORTANT : Ne mets aucun crochet [ ] et génère uniquement la lettre prête à être envoyée. Pas d'introduction ni de conclusion de ta part.
     """
     try:
         return model.generate_content(prompt).text
