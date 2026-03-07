@@ -112,13 +112,14 @@ def creer_paiement_sumup(montant=5.00):
         "currency": "EUR",
         "merchant_code": sumup_merchant_code,
         "description": "Génération de Mise en Demeure - Justibots",
-        "return_url": "https://justibot.fr/?payment=success" 
+        "return_url": "https://justibot.fr/?payment=success",
+        "hosted_checkout": {"enabled": True}  # <-- LA CORRECTION OFFICIELLE SUMUP
     }
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code in [200, 201]:
-            checkout_id = response.json().get("id")
-            return f"https://pay.sumup.com/b2c/screen/#/{checkout_id}"
+            # On récupère l'URL dynamique générée par SumUp
+            return response.json().get("hosted_checkout_url")
         return None
     except:
         return None
