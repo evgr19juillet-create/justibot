@@ -151,20 +151,16 @@ def generer_courrier(probleme, categorie, user_infos):
     model = genai.GenerativeModel(MODELE_AUTORISE)
     date_jour = datetime.now().strftime("%d/%m/%Y")
     
-    # 1. ON FORCE L'EN-TÊTE EN PYTHON (Infaillible)
+    # 1. EN-TÊTE FORCÉ EN PYTHON (100% infaillible maintenant)
     en_tete = f"{user_infos['nom']}\n"
-    if user_infos['adresse']:
-        en_tete += f"{user_infos['adresse']}\n"
-    if user_infos['ville']:
-        en_tete += f"{user_infos['ville']}\n"
-    if user_infos['email']:
-        en_tete += f"Email : {user_infos['email']}\n"
-        
-    en_tete += f"\nÀ l'attention du Service Client / SAV\nDate : {date_jour}\n\n"
+    en_tete += f"{user_infos['adresse']}\n"
+    en_tete += f"{user_infos['ville']}\n"
+    en_tete += f"Email : {user_infos['email']}\n\n"
+    en_tete += f"À l'attention du Service Client / SAV\nDate : {date_jour}\n\n"
     
     # 2. ON DEMANDE À L'IA DE FAIRE UNIQUEMENT LE RESTE
     prompt = f"""
-    Tu es un assistant juridique expert en droit français. 
+    Tu es un avocat expert en droit français. 
     Le litige concerne : {categorie}.
     Les faits racontés par le client : "{probleme}"
 
@@ -173,7 +169,7 @@ def generer_courrier(probleme, categorie, user_infos):
     CONSIGNES STRICTES :
     1. Commence directement par "Objet : Mise en demeure formelle - [Résumé de l'objet]"
     2. Enchaîne avec "Madame, Monsieur," puis le texte à la première personne ("Je").
-    3. NE LAISSE AUCUN CROCHET NI TEXTE À TROUS. Si tu ne connais pas une information (comme un numéro de commande ou une date précise), n'en parle pas, ou utilise des formulations générales (ex: "suite à mon récent achat").
+    3. NE LAISSE AUCUN CROCHET NI TEXTE À TROUS. N'invente pas de numéro de commande s'il n'y en a pas dans les faits.
     4. Adopte un ton très formel, froid et menaçant juridiquement.
     5. Cite les articles de loi adaptés (Code de la Consommation, Code Civil...).
     6. Exige la résolution du problème sous 8 jours.
@@ -215,8 +211,9 @@ if choix_page == "✍️ Générateur de Courrier":
         st.write("") 
         
         if st.button("Générer ma Mise en Demeure ⚡", type="primary", use_container_width=True):
-            if not nom_client or not message_litige:
-                st.error("⚠️ Merci de remplir au moins votre NOM et la DESCRIPTION du problème.")
+            # LA SÉCURITÉ ANTI-BUG DE NAVIGATEUR EST ICI :
+            if not nom_client or not adresse_client or not ville_client or not email_client_perso or not message_litige:
+                st.error("⚠️ Veuillez remplir TOUTES vos coordonnées à gauche et la description du problème. \n\n💡 **Astuce :** Si votre navigateur a rempli les cases automatiquement, le site ne l'a peut-être pas détecté. Cliquez dans chaque case et appuyez sur la touche 'Espace' ou 'Entrée' pour valider.")
             else:
                 with st.spinner("L'avocat IA rédige votre courrier..."):
                     cat = analyse_ia(message_litige)
