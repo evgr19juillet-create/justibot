@@ -151,29 +151,33 @@ def generer_courrier(probleme, categorie, user_infos):
     model = genai.GenerativeModel(MODELE_AUTORISE)
     date_jour = datetime.now().strftime("%d/%m/%Y")
     
-    # LA NOUVELLE CONSIGNE ULTRA-STRICTE POUR L'IA
+    # LA NOUVELLE CONSIGNE : RÈGLES DE FER STRICTES
     prompt = f"""
-    Tu es un assistant juridique expert. Rédige une MISE EN DEMEURE complète et définitive.
-    L'expéditeur et signataire direct de cette lettre est le client lui-même.
+    Tu es un assistant juridique expert. Rédige une MISE EN DEMEURE formelle et définitive.
 
-    RÈGLE ABSOLUE : Tu ne dois laisser AUCUN texte à trous ou entre crochets (pas de [Adresse] ou [Nom]). 
-    Tu dois OBLIGATOIREMENT intégrer les informations suivantes dans l'en-tête, en haut à gauche de la lettre :
-    Nom et Prénom : {user_infos['nom']}
-    Adresse : {user_infos['adresse']}
-    Ville : {user_infos['ville']}
+    RÈGLE ABSOLUE N°1 (LES COORDONNÉES) :
+    Tu ne dois INVENTER AUCUNE ADRESSE, AUCUNE VILLE et AUCUN EMAIL. Tu dois utiliser STRICTEMENT ET UNIQUEMENT les informations suivantes pour l'en-tête de l'expéditeur en haut à gauche :
+    {user_infos['nom']}
+    {user_infos['adresse']}
+    {user_infos['ville']}
     Email : {user_infos['email']}
 
-    DATE DU JOUR : {date_jour}
-    MOTIF DU LITIGE : {categorie}
-    FAITS EXPLIQUÉS : "{probleme}"
+    RÈGLE ABSOLUE N°2 (LE DESTINATAIRE ET LE TEXTE) :
+    Ne mets JAMAIS de crochets [ ]. Ne demande pas à l'utilisateur de compléter quoi que ce soit. Pour le destinataire, écris simplement : "À l'attention du Service Client / SAV".
+
+    CONTEXTE DU LITIGE :
+    - Date : {date_jour}
+    - Objet : Mise en demeure - {categorie}
+    - Faits : "{probleme}"
 
     CONSIGNES DE RÉDACTION :
-    1. Écris à la première personne du singulier ("Je").
-    2. Adopte un ton formel, extrêmement ferme et menaçant sur le plan juridique.
-    3. Cite impérativement les articles de loi adaptés à ce problème (Code de la Consommation, Code Civil...).
-    4. Exige une résolution du problème sous 8 jours, sous peine de saisir la juridiction compétente.
-    5. Intègre le nom du signataire ({user_infos['nom']}) à la fin de la lettre.
-    Ne rajoute pas de blabla ou d'introduction de chatbot, génère uniquement le texte de la lettre.
+    - Rédige la lettre à la première personne du singulier ("Je").
+    - Adopte un ton formel, froid et menaçant juridiquement.
+    - Cite impérativement les articles de loi adaptés à la situation (Code de la Consommation, Code Civil...).
+    - Exige une résolution sous 8 jours, sous peine de saisine du tribunal compétent.
+    - Signe avec : {user_infos['nom']}
+    
+    IMPORTANT : Génère UNIQUEMENT le texte de la lettre finale. Pas de blabla avant ou après.
     """
     try:
         return model.generate_content(prompt).text
