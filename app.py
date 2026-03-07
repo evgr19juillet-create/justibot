@@ -15,13 +15,44 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- PROTECTION ANTI-COPIE (CSS & JS) ---
+# --- PROTECTION ANTI-COPIE (CSS STRICT) ---
 st.markdown("""
 <style>
-    /* Bloque la sélection partout */
-    * { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
-    /* Autorise la sélection UNIQUEMENT si la case n'est pas désactivée */
-    input, textarea:not(:disabled) { -webkit-user-select: text !important; user-select: text !important; }
+    /* 1. Bloque la sélection sur TOUTE la page par défaut */
+    html, body, [class*="css"] {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+    }
+    
+    /* 2. Réautorise la saisie UNIQUEMENT sur les champs actifs (pour que le client puisse taper son nom/problème) */
+    input:not([disabled]), textarea:not([disabled]) {
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+        user-select: text !important;
+    }
+
+    /* 3. VERROUILLAGE ABSOLU de la case d'aperçu désactivée */
+    textarea[disabled] {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+        pointer-events: none !important; /* Bloque tout clic à l'intérieur */
+    }
+
+    /* Autorise le défilement (scroll) autour de la case pour pouvoir lire la fin du texte */
+    div[data-baseweb="textarea"] {
+        overflow-y: auto !important;
+    }
+
+    /* 4. Rend le surlignage 100% invisible en cas de forçage du navigateur */
+    textarea[disabled]::selection {
+        background-color: transparent !important;
+        color: inherit !important;
+    }
 </style>
 <script> document.addEventListener('contextmenu', event => event.preventDefault()); </script>
 """, unsafe_allow_html=True)
