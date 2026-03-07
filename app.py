@@ -48,10 +48,14 @@ st.markdown("""
         color: inherit !important;
     }
 
-    /* 5. CACHE LE PIED DE PAGE "Built with Streamlit" ET FULLSCREEN */
-    footer {
-        visibility: hidden !important;
-    }
+    /* 5. MÉTHODE BULLDOZER : CACHE TOUT STREAMLIT (Header, Footer, Menu, Fullscreen) */
+    #MainMenu {display: none !important;}
+    header {display: none !important;}
+    footer {display: none !important;}
+    [data-testid="stHeader"] {display: none !important;}
+    [data-testid="stFooter"] {display: none !important;}
+    [data-testid="stToolbar"] {display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
 </style>
 <script>
     /* Bloque le clic droit */
