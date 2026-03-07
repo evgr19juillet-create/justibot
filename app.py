@@ -88,7 +88,7 @@ def envoyer_mail(destinataire, sujet, corps):
         return False, f"Erreur d'envoi : {str(e)}"
 
 def analyse_ia(text):
-    # Utilisation du modèle 1.5-flash (maintenant que ta vraie clé est configurée !)
+    # Utilisation du modèle 1.5-flash 
     model = genai.GenerativeModel('gemini-1.5-flash')
     try:
         prompt = f"Analyse ce problème juridique et classe-le. Réponds juste par la catégorie. Contexte: {text}"
