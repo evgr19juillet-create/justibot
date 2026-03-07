@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- PROTECTION ANTI-COPIE (CSS & JS OPTIMISÉS) ---
+# --- PROTECTION ANTI-COPIE ET NETTOYAGE DESIGN (CSS & JS) ---
 st.markdown("""
 <style>
     /* 1. Bloque la sélection sur TOUTE la page par défaut */
@@ -46,6 +46,11 @@ st.markdown("""
     textarea[disabled]::selection {
         background-color: transparent !important;
         color: inherit !important;
+    }
+
+    /* 5. CACHE LE PIED DE PAGE "Built with Streamlit" ET FULLSCREEN */
+    footer {
+        visibility: hidden !important;
     }
 </style>
 <script>
