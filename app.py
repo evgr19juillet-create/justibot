@@ -151,39 +151,41 @@ def generer_courrier(probleme, categorie, user_infos):
     model = genai.GenerativeModel(MODELE_AUTORISE)
     date_jour = datetime.now().strftime("%d/%m/%Y")
     
-    # LE NOUVEAU CERVEAU DE L'IA (MOULE STRICT)
+    # 1. ON FORCE L'EN-TÊTE EN PYTHON (Infaillible)
+    en_tete = f"{user_infos['nom']}\n"
+    if user_infos['adresse']:
+        en_tete += f"{user_infos['adresse']}\n"
+    if user_infos['ville']:
+        en_tete += f"{user_infos['ville']}\n"
+    if user_infos['email']:
+        en_tete += f"Email : {user_infos['email']}\n"
+        
+    en_tete += f"\nÀ l'attention du Service Client / SAV\nDate : {date_jour}\n\n"
+    
+    # 2. ON DEMANDE À L'IA DE FAIRE UNIQUEMENT LE RESTE
     prompt = f"""
-    Tu es un assistant juridique expert. Rédige une MISE EN DEMEURE formelle et définitive.
+    Tu es un assistant juridique expert en droit français. 
+    Le litige concerne : {categorie}.
+    Les faits racontés par le client : "{probleme}"
 
-    CONSIGNE ABSOLUE POUR L'EN-TÊTE :
-    Tu dois COMMENCER ta lettre en recopiant EXACTEMENT ce bloc de texte, mot pour mot, ligne par ligne. Ne change rien, n'invente rien d'autre :
+    Rédige UNIQUEMENT le corps de la lettre de mise en demeure.
     
-    {user_infos['nom']}
-    {user_infos['adresse']}
-    {user_infos['ville']}
-    Email : {user_infos['email']}
-    
-    À l'attention du Service Client / SAV
-    Date : {date_jour}
-
-    Objet : Mise en demeure formelle - {categorie}
-
-    Madame, Monsieur,
-    
-    (Rédige maintenant la suite de la lettre à la première personne du singulier "Je").
-    
-    CONSIGNES POUR LE TEXTE :
-    - Adopte un ton très formel, froid et menaçant juridiquement.
-    - Cite les articles de loi adaptés à ce problème (Code de la Consommation, Code Civil...).
-    - Exige la résolution du problème sous 8 jours, sous peine de saisine du tribunal compétent.
-    - Termine la lettre avec la signature : {user_infos['nom']}
-    
-    IMPORTANT : Ne mets aucun crochet [ ] et génère uniquement la lettre prête à être envoyée. Pas d'introduction ni de conclusion de ta part.
+    CONSIGNES STRICTES :
+    1. Commence directement par "Objet : Mise en demeure formelle - [Résumé de l'objet]"
+    2. Enchaîne avec "Madame, Monsieur," puis le texte à la première personne ("Je").
+    3. NE LAISSE AUCUN CROCHET NI TEXTE À TROUS. Si tu ne connais pas une information (comme un numéro de commande ou une date précise), n'en parle pas, ou utilise des formulations générales (ex: "suite à mon récent achat").
+    4. Adopte un ton très formel, froid et menaçant juridiquement.
+    5. Cite les articles de loi adaptés (Code de la Consommation, Code Civil...).
+    6. Exige la résolution du problème sous 8 jours.
+    7. Termine par une formule de politesse classique et écris simplement "{user_infos['nom']}" tout en bas.
     """
     try:
-        return model.generate_content(prompt).text
+        corps_lettre = model.generate_content(prompt).text.strip()
+        # 3. ON ASSEMBLE LE TOUT
+        lettre_finale = en_tete + corps_lettre
+        return lettre_finale
     except Exception as e:
-        return f"Erreur IA complète : {str(e)} (Modèle utilisé: {MODELE_AUTORISE})"
+        return f"Erreur IA : {str(e)}"
 
 # --- 5. INTERFACE ---
 with st.sidebar:
