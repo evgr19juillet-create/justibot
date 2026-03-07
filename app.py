@@ -45,10 +45,10 @@ st.markdown("""
     /* 4. Rend le surlignage invisible */
     textarea[disabled]::selection { background-color: transparent !important; color: inherit !important; }
 
-    /* 5. CACHE TOUT STREAMLIT (Standard) */
+    /* 5. CACHE TOUT STREAMLIT (Sécurité supplémentaire) */
     header, footer, [data-testid="stHeader"], [data-testid="stFooter"], [data-testid="stToolbar"], #MainMenu { display: none !important; visibility: hidden !important; }
 
-    /* 6. METHODE SNIPER : CACHE LA BARRE DU MODE "EMBED/IFRAME" DE HOSTINGER */
+    /* 6. METHODE SNIPER : CACHE LA BARRE DU MODE "EMBED/IFRAME" */
     a[href^="https://streamlit.io"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
     button[title="View fullscreen"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
     div[class^="viewerBadge"] { display: none !important; visibility: hidden !important; opacity: 0 !important; }
