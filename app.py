@@ -88,8 +88,8 @@ def envoyer_mail(destinataire, sujet, corps):
         return False, f"Erreur d'envoi : {str(e)}"
 
 def analyse_ia(text):
-    # CORRECTION : Retour au modèle stable qui marchait (gemini-pro)
-    model = genai.GenerativeModel('gemini-pro')
+    # Utilisation obligatoire du modèle récent
+    model = genai.GenerativeModel('gemini-1.5-flash')
     try:
         prompt = f"Analyse ce problème juridique et classe-le. Réponds juste par la catégorie. Contexte: {text}"
         return model.generate_content(prompt).text.strip()
@@ -97,8 +97,8 @@ def analyse_ia(text):
         return "Litige commercial"
 
 def generer_courrier(probleme, categorie, user_infos):
-    # CORRECTION : Retour au modèle stable qui marchait (gemini-pro)
-    model = genai.GenerativeModel('gemini-pro')
+    # Utilisation obligatoire du modèle récent
+    model = genai.GenerativeModel('gemini-1.5-flash')
     date_jour = datetime.now().strftime("%d/%m/%Y")
     prompt = f"""
     Agis comme un avocat expert en droit de la consommation français. Rédige une MISE EN DEMEURE formelle.
