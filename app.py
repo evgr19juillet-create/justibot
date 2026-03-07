@@ -42,36 +42,27 @@ st.markdown("""
         user-select: none !important;
     }
 
-    /* 4. Rend le surlignage 100% invisible en cas de forçage */
-    textarea[disabled]::selection {
-        background-color: transparent !important;
-        color: inherit !important;
-    }
+    /* 4. Rend le surlignage invisible */
+    textarea[disabled]::selection { background-color: transparent !important; color: inherit !important; }
 
-    /* 5. MÉTHODE BULLDOZER : CACHE TOUT STREAMLIT (Header, Footer, Menu, Fullscreen) */
-    #MainMenu {display: none !important;}
-    header {display: none !important;}
-    footer {display: none !important;}
-    [data-testid="stHeader"] {display: none !important;}
-    [data-testid="stFooter"] {display: none !important;}
-    [data-testid="stToolbar"] {display: none !important;}
-    [data-testid="stDecoration"] {display: none !important;}
+    /* 5. CACHE TOUT STREAMLIT (Standard) */
+    header, footer, [data-testid="stHeader"], [data-testid="stFooter"], [data-testid="stToolbar"], #MainMenu { display: none !important; visibility: hidden !important; }
+
+    /* 6. METHODE SNIPER : CACHE LA BARRE DU MODE "EMBED/IFRAME" DE HOSTINGER */
+    a[href^="https://streamlit.io"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+    button[title="View fullscreen"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+    div[class^="viewerBadge"] { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+    .viewerBadge_container__1QSob { display: none !important; }
 </style>
 <script>
-    /* Bloque le clic droit */
+    /* Bloque le clic droit et les raccourcis de copie */
     document.addEventListener('contextmenu', event => event.preventDefault());
-    
-    /* Bloque les raccourcis clavier de copie (Ctrl+C, Ctrl+A) */
     document.addEventListener('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'a' || e.key === 'A' || e.key === 'x' || e.key === 'X')) {
             e.preventDefault();
         }
     });
-    
-    /* Sécurité ultime : annule systématiquement l'action de copier */
-    document.addEventListener('copy', function(e) {
-        e.preventDefault();
-    });
+    document.addEventListener('copy', function(e) { e.preventDefault(); });
 </script>
 """, unsafe_allow_html=True)
 
@@ -176,7 +167,6 @@ with st.sidebar:
     choix_page = st.radio("Aller vers :", ["✍️ Générateur de Courrier", "📚 Ressources Juridiques"])
     st.divider()
     
-    # --- MINI DIAGNOSTIC POUR TOI ---
     st.caption("🔧 Diagnostic Technique (Invisible pour le client)")
     st.caption(f"Clé lue : {api_key[:8]}...")
     st.caption(f"Modèle branché : {MODELE_AUTORISE}")
