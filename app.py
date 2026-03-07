@@ -113,12 +113,11 @@ def creer_paiement_sumup(montant=5.00):
         "merchant_code": sumup_merchant_code,
         "description": "Génération de Mise en Demeure - Justibots",
         "return_url": "https://justibot.fr/?payment=success",
-        "hosted_checkout": {"enabled": True}  # <-- LA CORRECTION OFFICIELLE SUMUP
+        "hosted_checkout": {"enabled": True}
     }
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code in [200, 201]:
-            # On récupère l'URL dynamique générée par SumUp
             return response.json().get("hosted_checkout_url")
         return None
     except:
@@ -151,11 +150,30 @@ def analyse_ia(text):
 def generer_courrier(probleme, categorie, user_infos):
     model = genai.GenerativeModel(MODELE_AUTORISE)
     date_jour = datetime.now().strftime("%d/%m/%Y")
+    
+    # LA NOUVELLE CONSIGNE ULTRA-STRICTE POUR L'IA
     prompt = f"""
-    Agis comme un avocat expert en droit de la consommation français. Rédige une MISE EN DEMEURE formelle.
-    EXPÉDITEUR: Nom : {user_infos['nom']}, Adresse : {user_infos['adresse']}, Ville : {user_infos['ville']}, Email : {user_infos['email']}
-    DATE : {date_jour} | MOTIF : {categorie} | FAITS : "{probleme}"
-    CONSIGNES : En-tête complet, ton ferme juridique, cite articles de loi, résolution sous 8 jours, menace tribunal, signature.
+    Tu es un assistant juridique expert. Rédige une MISE EN DEMEURE complète et définitive.
+    L'expéditeur et signataire direct de cette lettre est le client lui-même.
+
+    RÈGLE ABSOLUE : Tu ne dois laisser AUCUN texte à trous ou entre crochets (pas de [Adresse] ou [Nom]). 
+    Tu dois OBLIGATOIREMENT intégrer les informations suivantes dans l'en-tête, en haut à gauche de la lettre :
+    Nom et Prénom : {user_infos['nom']}
+    Adresse : {user_infos['adresse']}
+    Ville : {user_infos['ville']}
+    Email : {user_infos['email']}
+
+    DATE DU JOUR : {date_jour}
+    MOTIF DU LITIGE : {categorie}
+    FAITS EXPLIQUÉS : "{probleme}"
+
+    CONSIGNES DE RÉDACTION :
+    1. Écris à la première personne du singulier ("Je").
+    2. Adopte un ton formel, extrêmement ferme et menaçant sur le plan juridique.
+    3. Cite impérativement les articles de loi adaptés à ce problème (Code de la Consommation, Code Civil...).
+    4. Exige une résolution du problème sous 8 jours, sous peine de saisir la juridiction compétente.
+    5. Intègre le nom du signataire ({user_infos['nom']}) à la fin de la lettre.
+    Ne rajoute pas de blabla ou d'introduction de chatbot, génère uniquement le texte de la lettre.
     """
     try:
         return model.generate_content(prompt).text
