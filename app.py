@@ -33,41 +33,60 @@ try:
     user_password = st.secrets["EMAIL_PASSWORD"]
     sumup_api_key = st.secrets["SUMUP_API_KEY"]
     sumup_merchant_code = st.secrets["SUMUP_MERCHANT_CODE"]
-except FileNotFoundError:
+except Exception:
     st.error("⚠️ Les secrets (clés) ne sont pas configurés. Vérifiez sur Streamlit.")
     st.stop()
 
 genai.configure(api_key=api_key)
 
-# --- 3. LOGIQUE DE PAIEMENT ---
+# --- 3. DÉTECTION AUTOMATIQUE DU MODÈLE (LE CORRECTIF MAGIQUE) ---
+@st.cache_resource
+def obtenir_modele():
+    try:
+        # Demande à Google la liste exacte des modèles autorisés pour CETTE clé
+        modeles_autorises = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        
+        # Cherche le meilleur modèle récent en priorité
+        for nom in modeles_autorises:
+            if '1.5-flash' in nom:
+                return nom.replace('models/', '')
+                
+        # Sinon, prend le premier modèle disponible qui fonctionne
+        if modeles_autorises:
+            return modeles_autorises[0].replace('models/', '')
+            
+        return 'gemini-1.5-flash'
+    except Exception:
+        # Si erreur d'API, on met une valeur par défaut
+        return 'gemini-1.5-flash'
+
+MODELE_AUTORISE = obtenir_modele()
+
+# --- LOGIQUE DE PAIEMENT ---
 query_params = st.query_params
 est_paye = query_params.get("payment") == "success"
 
 # --- 4. FONCTIONS ---
-
 def creer_paiement_sumup(montant=5.00):
-    """Communique avec l'API SumUp pour générer un lien de paiement dynamique"""
     url = "https://api.sumup.com/v0.1/checkouts"
     headers = {
         "Authorization": f"Bearer {sumup_api_key}",
         "Content-Type": "application/json"
     }
     data = {
-        "checkout_reference": str(uuid.uuid4()), # Crée un numéro de commande unique
+        "checkout_reference": str(uuid.uuid4()),
         "amount": montant,
         "currency": "EUR",
         "merchant_code": sumup_merchant_code,
         "description": "Génération de Mise en Demeure - Justibots",
-        "return_url": "https://justibot.fr/?payment=success" # La redirection magique !
+        "return_url": "https://justibot.fr/?payment=success" 
     }
-    
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code in [200, 201]:
             checkout_id = response.json().get("id")
             return f"https://pay.sumup.com/b2c/screen/#/{checkout_id}"
-        else:
-            return None
+        return None
     except:
         return None
 
@@ -88,17 +107,15 @@ def envoyer_mail(destinataire, sujet, corps):
         return False, f"Erreur d'envoi : {str(e)}"
 
 def analyse_ia(text):
-    # Utilisation obligatoire du modèle récent
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel(MODELE_AUTORISE)
     try:
         prompt = f"Analyse ce problème juridique et classe-le. Réponds juste par la catégorie. Contexte: {text}"
         return model.generate_content(prompt).text.strip()
-    except:
-        return "Litige commercial"
+    except Exception as e:
+        return f"Erreur d'analyse IA : {str(e)}"
 
 def generer_courrier(probleme, categorie, user_infos):
-    # Utilisation obligatoire du modèle récent
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel(MODELE_AUTORISE)
     date_jour = datetime.now().strftime("%d/%m/%Y")
     prompt = f"""
     Agis comme un avocat expert en droit de la consommation français. Rédige une MISE EN DEMEURE formelle.
@@ -109,13 +126,18 @@ def generer_courrier(probleme, categorie, user_infos):
     try:
         return model.generate_content(prompt).text
     except Exception as e:
-        return f"Erreur IA : {e}"
+        return f"Erreur IA complète : {str(e)} (Modèle utilisé: {MODELE_AUTORISE})"
 
 # --- 5. INTERFACE ---
 with st.sidebar:
     st.title("🧭 Navigation")
     choix_page = st.radio("Aller vers :", ["✍️ Générateur de Courrier", "📚 Ressources Juridiques"])
     st.divider()
+    
+    # --- MINI DIAGNOSTIC POUR TOI ---
+    st.caption("🔧 Diagnostic Technique (Invisible pour le client)")
+    st.caption(f"Clé lue : {api_key[:8]}...")
+    st.caption(f"Modèle branché : {MODELE_AUTORISE}")
 
 if choix_page == "✍️ Générateur de Courrier":
     st.title("⚖️ Justibots : Assistant Juridique")
@@ -141,10 +163,13 @@ if choix_page == "✍️ Générateur de Courrier":
                 with st.spinner("L'avocat IA rédige votre courrier..."):
                     cat = analyse_ia(message_litige)
                     infos_client = {"nom": nom_client, "adresse": adresse_client, "ville": ville_client, "email": email_client_perso}
-                    st.session_state['courrier'] = generer_courrier(message_litige, cat, infos_client)
+                    
+                    # Génération et sauvegarde dans la session
+                    resultat_courrier = generer_courrier(message_litige, cat, infos_client)
+                    st.session_state['courrier'] = resultat_courrier
                     st.session_state['sujet'] = f"MISE EN DEMEURE - {cat} - {nom_client}"
                     
-                    # On génère le lien de paiement SumUp
+                    # Lien SumUp
                     lien_sumup = creer_paiement_sumup(montant=5.00)
                     if lien_sumup:
                         st.session_state['lien_paiement'] = lien_sumup
@@ -158,12 +183,11 @@ if choix_page == "✍️ Générateur de Courrier":
             st.subheader("🔒 Votre courrier est prêt !")
             st.warning("Pour débloquer l'envoi, le téléchargement et les modifications, merci de régler les frais de service.")
             
-            # AFFICHAGE DU TEXTE COMPLET (MAIS BLOQUÉ À LA COPIE)
             st.text_area("Aperçu complet (Lecture seule, Copie désactivée) :", value=st.session_state['courrier'], height=400, disabled=True)
             
             if 'lien_paiement' in st.session_state:
                 st.link_button("💳 Payer avec SumUp (5,00€) pour débloquer", st.session_state['lien_paiement'], type="primary", use_container_width=True)
-                st.caption("Une fois le paiement effectué, vous serez redirigé automatiquement ici pour envoyer ou télécharger le fichier.")
+                st.caption("Une fois le paiement effectué, vous serez redirigé automatiquement ici.")
         else:
             st.subheader("📝 Votre courrier débloqué")
             st.success("✅ Paiement confirmé ! Vous pouvez maintenant modifier et envoyer votre courrier.")
