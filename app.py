@@ -47,8 +47,9 @@ st.markdown("""
     /* 4. Rend le surlignage invisible */
     textarea[disabled]::selection { background-color: transparent !important; color: inherit !important; }
 
-    /* 5. CACHE TOUT STREAMLIT (Sécurité supplémentaire) */
-    header, footer, [data-testid="stHeader"], [data-testid="stFooter"], [data-testid="stToolbar"], #MainMenu { display: none !important; visibility: hidden !important; }
+    /* 5. CACHE LES BOUTONS STREAMLIT MAIS GARDE LE BOUTON MENU ACCESSIBLE */
+    footer, [data-testid="stFooter"], [data-testid="stToolbar"], #MainMenu { display: none !important; visibility: hidden !important; }
+    header { background-color: transparent !important; }
 
     /* 6. METHODE SNIPER : CACHE LA BARRE DU MODE "EMBED/IFRAME" */
     a[href^="https://streamlit.io"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
@@ -125,7 +126,6 @@ def creer_paiement_sumup(montant=5.00):
     except:
         return None
 
-# NOUVEAU : La fonction mail gère maintenant les pièces jointes !
 def envoyer_mail(destinataire, sujet, corps, fichiers_joints=None):
     msg = MIMEMultipart()
     msg['From'] = user_email
@@ -214,8 +214,6 @@ if choix_page == "✍️ Générateur de Courrier":
         message_litige = st.text_area("Expliquez la situation en détail...", height=250)
     with col2:
         email_sav = st.text_input("Email du SAV adverse")
-        
-        # NOUVEAU : La zone pour uploader les photos/PDF
         fichiers_preuves = st.file_uploader("📎 Ajouter des preuves (Photos, Factures...)", type=["jpg", "jpeg", "png", "pdf"], accept_multiple_files=True)
         st.write("") 
         
@@ -227,7 +225,6 @@ if choix_page == "✍️ Générateur de Courrier":
                     cat = analyse_ia(message_litige)
                     infos_client = {"nom": nom_client, "adresse": adresse_client, "ville": ville_client, "email": email_client_perso}
                     
-                    # On sauvegarde les preuves en mémoire pour l'email final
                     st.session_state['preuves'] = fichiers_preuves
                     
                     resultat_courrier = generer_courrier(message_litige, cat, infos_client)
@@ -267,7 +264,6 @@ if choix_page == "✍️ Générateur de Courrier":
                         st.error("Il manque l'email du destinataire !")
                     else:
                         with st.spinner("Envoi en cours..."):
-                            # NOUVEAU : On intègre les preuves lors de l'envoi
                             preuves_jointes = st.session_state.get('preuves', [])
                             ok, msg = envoyer_mail(email_sav, sujet_final, courrier_final, preuves_jointes)
                             st.success(msg) if ok else st.error(msg)
