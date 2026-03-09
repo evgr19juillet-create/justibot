@@ -151,14 +151,14 @@ def generer_courrier(probleme, categorie, user_infos):
     model = genai.GenerativeModel(MODELE_AUTORISE)
     date_jour = datetime.now().strftime("%d/%m/%Y")
     
-    # 1. EN-TÊTE FORCÉ EN PYTHON (100% infaillible maintenant)
+    # 1. EN-TÊTE FORCÉ EN PYTHON
     en_tete = f"{user_infos['nom']}\n"
     en_tete += f"{user_infos['adresse']}\n"
     en_tete += f"{user_infos['ville']}\n"
     en_tete += f"Email : {user_infos['email']}\n\n"
     en_tete += f"À l'attention du Service Client / SAV\nDate : {date_jour}\n\n"
     
-    # 2. ON DEMANDE À L'IA DE FAIRE UNIQUEMENT LE RESTE
+    # 2. IA CORPS
     prompt = f"""
     Tu es un avocat expert en droit français. 
     Le litige concerne : {categorie}.
@@ -169,7 +169,7 @@ def generer_courrier(probleme, categorie, user_infos):
     CONSIGNES STRICTES :
     1. Commence directement par "Objet : Mise en demeure formelle - [Résumé de l'objet]"
     2. Enchaîne avec "Madame, Monsieur," puis le texte à la première personne ("Je").
-    3. NE LAISSE AUCUN CROCHET NI TEXTE À TROUS. N'invente pas de numéro de commande s'il n'y en a pas dans les faits.
+    3. NE LAISSE AUCUN CROCHET NI TEXTE À TROUS. N'invente pas de numéro de commande s'il n'y en a pas.
     4. Adopte un ton très formel, froid et menaçant juridiquement.
     5. Cite les articles de loi adaptés (Code de la Consommation, Code Civil...).
     6. Exige la résolution du problème sous 8 jours.
@@ -177,7 +177,6 @@ def generer_courrier(probleme, categorie, user_infos):
     """
     try:
         corps_lettre = model.generate_content(prompt).text.strip()
-        # 3. ON ASSEMBLE LE TOUT
         lettre_finale = en_tete + corps_lettre
         return lettre_finale
     except Exception as e:
@@ -186,7 +185,8 @@ def generer_courrier(probleme, categorie, user_infos):
 # --- 5. INTERFACE ---
 with st.sidebar:
     st.title("🧭 Navigation")
-    choix_page = st.radio("Aller vers :", ["✍️ Générateur de Courrier", "📚 Ressources Juridiques"])
+    # NOUVEAU MENU AJOUTÉ ICI 👇
+    choix_page = st.radio("Aller vers :", ["✍️ Générateur de Courrier", "📚 Ressources Juridiques", "⚖️ Mentions Légales & CGV"])
     st.divider()
     
     st.caption("🔧 Diagnostic Technique (Invisible pour le client)")
@@ -211,9 +211,8 @@ if choix_page == "✍️ Générateur de Courrier":
         st.write("") 
         
         if st.button("Générer ma Mise en Demeure ⚡", type="primary", use_container_width=True):
-            # LA SÉCURITÉ ANTI-BUG DE NAVIGATEUR EST ICI :
             if not nom_client or not adresse_client or not ville_client or not email_client_perso or not message_litige:
-                st.error("⚠️ Veuillez remplir TOUTES vos coordonnées à gauche et la description du problème. \n\n💡 **Astuce :** Si votre navigateur a rempli les cases automatiquement, le site ne l'a peut-être pas détecté. Cliquez dans chaque case et appuyez sur la touche 'Espace' ou 'Entrée' pour valider.")
+                st.error("⚠️ Veuillez remplir TOUTES vos coordonnées à gauche et la description du problème. \n\n💡 **Astuce :** Si votre navigateur a rempli les cases automatiquement, cliquez dans chaque case et appuyez sur la touche 'Espace' pour valider.")
             else:
                 with st.spinner("L'avocat IA rédige votre courrier..."):
                     cat = analyse_ia(message_litige)
@@ -263,3 +262,29 @@ elif choix_page == "📚 Ressources Juridiques":
     st.title("📚 Ressources & Droits")
     st.markdown("Guides rapides pour comprendre vos droits avant d'agir.")
     st.info("💡 Sélectionnez une rubrique pour en savoir plus dans le menu de gauche.")
+
+# --- NOUVELLE PAGE MENTIONS LÉGALES & CGV ---
+elif choix_page == "⚖️ Mentions Légales & CGV":
+    st.title("⚖️ Mentions Légales & Conditions Générales de Vente")
+    st.markdown("""
+    ### 1. Éditeur du site
+    Ce site est édité et géré par **Valentin Remiot**, agissant en tant qu'éditeur de la solution logicielle Justibot.
+    * **Adresse :** 18 place du dr hugier, 51120 Sézanne, France.
+    * **Contact email :** valentin.jacques51210@gmail.com
+    * **Hébergeur :** Le nom de domaine justibot.fr est hébergé par Hostinger. L'application est propulsée par Streamlit Community Cloud.
+
+    ### 2. Description du service
+    Justibot propose un outil d'assistance à la rédaction de courriers juridiques (mises en demeure) générés par une Intelligence Artificielle.
+    **Attention :** Justibot n'est pas un cabinet d'avocats. L'outil fournit des modèles de lettres générés automatiquement sur la base des éléments fournis par l'utilisateur. L'éditeur ne saurait être tenu responsable de l'issue d'un litige ni de l'exactitude des fondements juridiques proposés par l'algorithme. Il s'agit d'une obligation de moyens et non de résultat.
+
+    ### 3. Tarification et Paiement
+    Le service est facturé à l'acte au tarif unique de **5,00 € TTC** par courrier généré et débloqué.
+    Le paiement est assuré de manière entièrement sécurisée par notre prestataire de services de paiement certifié **SumUp**. Aucune donnée bancaire n'est stockée sur nos serveurs.
+
+    ### 4. Renonciation au droit de rétractation
+    Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne peut être exercé pour les contrats de fourniture d'un contenu numérique non fourni sur un support matériel dont l'exécution a commencé après accord préalable exprès du consommateur.
+    En validant le paiement de 5,00 € pour débloquer votre courrier, **vous acceptez expressément que le service soit exécuté immédiatement et vous renoncez par conséquent à votre droit de rétractation de 14 jours**. Aucun remboursement ne pourra être exigé après le déblocage du document.
+
+    ### 5. Protection des données personnelles (RGPD)
+    Les informations saisies dans le formulaire (Nom, Adresse, Email, faits du litige) sont utilisées de manière éphémère et automatisée pour interroger l'Intelligence Artificielle (Google Gemini) et générer votre document. Ces données ne sont **ni stockées dans une base de données, ni revendues à des tiers**.
+    """)
