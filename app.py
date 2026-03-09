@@ -187,10 +187,6 @@ with st.sidebar:
     st.title("🧭 Navigation")
     choix_page = st.radio("Aller vers :", ["✍️ Générateur de Courrier", "📚 Ressources Juridiques", "⚖️ Mentions Légales & CGV"])
     st.divider()
-    
-    st.caption("🔧 Diagnostic Technique (Invisible pour le client)")
-    st.caption(f"Clé lue : {api_key[:8]}...")
-    st.caption(f"Modèle branché : {MODELE_AUTORISE}")
 
 if choix_page == "✍️ Générateur de Courrier":
     st.title("⚖️ Justibots : Assistant Juridique")
@@ -261,7 +257,6 @@ elif choix_page == "📚 Ressources Juridiques":
     st.title("📚 Ressources & Droits")
     st.markdown("Consultez nos fiches pratiques pour comprendre vos droits face aux litiges du quotidien.")
     
-    # Création des 4 onglets
     tab1, tab2, tab3, tab4 = st.tabs([
         "📦 Colis non reçu", 
         "✈️ Vol annulé/retardé", 
