@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Justibots",
     page_icon="⚖️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded" # Force l'ouverture au démarrage
 )
 
 # --- PROTECTION ANTI-COPIE ET NETTOYAGE DESIGN (CSS & JS) ---
@@ -47,15 +47,17 @@ st.markdown("""
     /* 4. Rend le surlignage invisible */
     textarea[disabled]::selection { background-color: transparent !important; color: inherit !important; }
 
-    /* 5. CACHE LES BOUTONS STREAMLIT MAIS GARDE LE BOUTON MENU ACCESSIBLE */
-    footer, [data-testid="stFooter"], [data-testid="stToolbar"], #MainMenu { display: none !important; visibility: hidden !important; }
-    header { background-color: transparent !important; }
+    /* 5. NETTOYAGE STREAMLIT : Cache SEULEMENT les éléments gênants */
+    footer, [data-testid="stFooter"], [data-testid="stToolbar"], #MainMenu { 
+        display: none !important; 
+        visibility: hidden !important; 
+    }
+    
+    /* 6. FORCE LE MENU OUVERT : Cache le bouton qui permet de fermer la barre latérale */
+    [data-testid="stSidebarCollapseButton"] {
+        display: none !important;
+    }
 
-    /* 6. METHODE SNIPER : CACHE LA BARRE DU MODE "EMBED/IFRAME" */
-    a[href^="https://streamlit.io"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-    button[title="View fullscreen"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-    div[class^="viewerBadge"] { display: none !important; visibility: hidden !important; opacity: 0 !important; }
-    .viewerBadge_container__1QSob { display: none !important; }
 </style>
 <script>
     /* Bloque le clic droit et les raccourcis de copie */
