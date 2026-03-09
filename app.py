@@ -3,6 +3,8 @@ import google.generativeai as genai
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from datetime import datetime
 import requests
 import uuid
@@ -123,19 +125,30 @@ def creer_paiement_sumup(montant=5.00):
     except:
         return None
 
-def envoyer_mail(destinataire, sujet, corps):
+# NOUVEAU : La fonction mail gère maintenant les pièces jointes !
+def envoyer_mail(destinataire, sujet, corps, fichiers_joints=None):
     msg = MIMEMultipart()
     msg['From'] = user_email
     msg['To'] = destinataire
     msg['Subject'] = sujet
     msg.attach(MIMEText(corps, 'plain'))
+
+    # Ajout des pièces jointes au mail
+    if fichiers_joints:
+        for fichier in fichiers_joints:
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(fichier.getvalue())
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', f'attachment; filename="{fichier.name}"')
+            msg.attach(part)
+
     try:
         server = smtplib.SMTP('smtp.hostinger.com', 587)
         server.starttls()
         server.login(user_email, user_password)
         server.send_message(msg)
         server.quit()
-        return True, "✅ Courrier envoyé avec succès !"
+        return True, "✅ Courrier et preuves envoyés avec succès !"
     except Exception as e:
         return False, f"Erreur d'envoi : {str(e)}"
 
@@ -151,14 +164,12 @@ def generer_courrier(probleme, categorie, user_infos):
     model = genai.GenerativeModel(MODELE_AUTORISE)
     date_jour = datetime.now().strftime("%d/%m/%Y")
     
-    # 1. EN-TÊTE FORCÉ EN PYTHON
     en_tete = f"{user_infos['nom']}\n"
     en_tete += f"{user_infos['adresse']}\n"
     en_tete += f"{user_infos['ville']}\n"
     en_tete += f"Email : {user_infos['email']}\n\n"
     en_tete += f"À l'attention du Service Client / SAV\nDate : {date_jour}\n\n"
     
-    # 2. IA CORPS
     prompt = f"""
     Tu es un avocat expert en droit français. 
     Le litige concerne : {categorie}.
@@ -203,15 +214,21 @@ if choix_page == "✍️ Générateur de Courrier":
         message_litige = st.text_area("Expliquez la situation en détail...", height=250)
     with col2:
         email_sav = st.text_input("Email du SAV adverse")
+        
+        # NOUVEAU : La zone pour uploader les photos/PDF
+        fichiers_preuves = st.file_uploader("📎 Ajouter des preuves (Photos, Factures...)", type=["jpg", "jpeg", "png", "pdf"], accept_multiple_files=True)
         st.write("") 
         
         if st.button("Générer ma Mise en Demeure ⚡", type="primary", use_container_width=True):
             if not nom_client or not adresse_client or not ville_client or not email_client_perso or not message_litige:
-                st.error("⚠️ Veuillez remplir TOUTES vos coordonnées à gauche et la description du problème. \n\n💡 **Astuce :** Si votre navigateur a rempli les cases automatiquement, cliquez dans chaque case et appuyez sur la touche 'Espace' pour valider.")
+                st.error("⚠️ Veuillez remplir TOUTES vos coordonnées à gauche et la description du problème.")
             else:
                 with st.spinner("L'avocat IA rédige votre courrier..."):
                     cat = analyse_ia(message_litige)
                     infos_client = {"nom": nom_client, "adresse": adresse_client, "ville": ville_client, "email": email_client_perso}
+                    
+                    # On sauvegarde les preuves en mémoire pour l'email final
+                    st.session_state['preuves'] = fichiers_preuves
                     
                     resultat_courrier = generer_courrier(message_litige, cat, infos_client)
                     st.session_state['courrier'] = resultat_courrier
@@ -250,7 +267,9 @@ if choix_page == "✍️ Générateur de Courrier":
                         st.error("Il manque l'email du destinataire !")
                     else:
                         with st.spinner("Envoi en cours..."):
-                            ok, msg = envoyer_mail(email_sav, sujet_final, courrier_final)
+                            # NOUVEAU : On intègre les preuves lors de l'envoi
+                            preuves_jointes = st.session_state.get('preuves', [])
+                            ok, msg = envoyer_mail(email_sav, sujet_final, courrier_final, preuves_jointes)
                             st.success(msg) if ok else st.error(msg)
 
 elif choix_page == "📚 Ressources Juridiques":
@@ -269,11 +288,6 @@ elif choix_page == "📚 Ressources Juridiques":
         st.info("💡 **La règle d'or :** C'est le vendeur qui est responsable, pas le transporteur !")
         st.markdown("""
         **Que dit la loi ?** Selon l'article L216-1 du Code de la consommation, le vendeur est responsable de la livraison du bien. Si le transporteur (La Poste, Colissimo, Mondial Relay...) perd le colis ou prétend l'avoir livré à tort, c'est au vendeur de vous rembourser ou de vous renvoyer le produit. Il ne peut pas vous demander de vous débrouiller avec le transporteur.
-        
-        **Comment agir ?**
-        1. Contactez le SAV par mail pour signaler la non-réception. On vous demandera souvent une attestation sur l'honneur.
-        2. Si le vendeur refuse de rembourser en accusant le transporteur (ou vous-même).
-        3. **Générez une Mise en Demeure avec Justibot** pour exiger le remboursement sous 8 jours sous peine de poursuites.
         """)
         
     with tab2:
@@ -285,11 +299,6 @@ elif choix_page == "📚 Ressources Juridiques":
         * **250 €** pour les vols jusqu'à 1 500 km.
         * **400 €** pour les vols entre 1 500 km et 3 500 km.
         * **600 €** pour les vols de plus de 3 500 km.
-        
-        *(Exception : si le retard est dû à des "circonstances extraordinaires" comme une tempête imprévisible).*
-        
-        **Comment agir ?**
-        Faites d'abord une réclamation classique sur le site de la compagnie. Les compagnies font souvent traîner ou refusent sans motif valable. En cas de refus ou de silence, une mise en demeure formelle débloque généralement la situation.
         """)
         
     with tab3:
@@ -298,10 +307,6 @@ elif choix_page == "📚 Ressources Juridiques":
         st.markdown("""
         **Que dit la loi ?**
         Les articles L217-3 et suivants du Code de la consommation obligent le **vendeur** (et non le fabricant) à réparer, remplacer ou rembourser un produit qui tombe en panne dans les 2 ans suivant l'achat. 
-        Le plus puissant : pendant ces 2 ans, vous n'avez pas à prouver que le défaut existait lors de l'achat, la loi présume que c'est le cas !
-        
-        **Comment agir ?**
-        Rapportez le produit ou contactez le vendeur. S'il essaie de vous renvoyer vers le fabricant (une pratique illégale courante) ou refuse d'appliquer la garantie, une mise en demeure citant le Code de la consommation le forcera à respecter ses obligations.
         """)
         
     with tab4:
@@ -312,12 +317,6 @@ elif choix_page == "📚 Ressources Juridiques":
         La loi du 6 juillet 1989 encadre très strictement les délais de restitution :
         * **1 mois maximum** si l'état des lieux de sortie est identique à l'état des lieux d'entrée.
         * **2 mois maximum** s'il y a des dégradations notées.
-        
-        **La pénalité de retard :**
-        Si le propriétaire dépasse ce délai, la loi prévoit que la somme due est majorée de **10 % du loyer hors charges pour chaque mois de retard entamé**.
-        
-        **Comment agir ?**
-        Dès le premier jour de retard, générez une mise en demeure exigeant la restitution immédiate des fonds, en n'oubliant pas de mentionner et d'exiger la pénalité de retard de 10% !
         """)
 
 elif choix_page == "⚖️ Mentions Légales & CGV":
