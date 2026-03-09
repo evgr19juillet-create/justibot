@@ -185,7 +185,6 @@ def generer_courrier(probleme, categorie, user_infos):
 # --- 5. INTERFACE ---
 with st.sidebar:
     st.title("🧭 Navigation")
-    # NOUVEAU MENU AJOUTÉ ICI 👇
     choix_page = st.radio("Aller vers :", ["✍️ Générateur de Courrier", "📚 Ressources Juridiques", "⚖️ Mentions Légales & CGV"])
     st.divider()
     
@@ -260,10 +259,72 @@ if choix_page == "✍️ Générateur de Courrier":
 
 elif choix_page == "📚 Ressources Juridiques":
     st.title("📚 Ressources & Droits")
-    st.markdown("Guides rapides pour comprendre vos droits avant d'agir.")
-    st.info("💡 Sélectionnez une rubrique pour en savoir plus dans le menu de gauche.")
+    st.markdown("Consultez nos fiches pratiques pour comprendre vos droits face aux litiges du quotidien.")
+    
+    # Création des 4 onglets
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "📦 Colis non reçu", 
+        "✈️ Vol annulé/retardé", 
+        "🛠️ Produit défectueux", 
+        "🏠 Caution non rendue"
+    ])
+    
+    with tab1:
+        st.header("Colis marqué comme 'livré' mais non reçu, ou perdu")
+        st.info("💡 **La règle d'or :** C'est le vendeur qui est responsable, pas le transporteur !")
+        st.markdown("""
+        **Que dit la loi ?** Selon l'article L216-1 du Code de la consommation, le vendeur est responsable de la livraison du bien. Si le transporteur (La Poste, Colissimo, Mondial Relay...) perd le colis ou prétend l'avoir livré à tort, c'est au vendeur de vous rembourser ou de vous renvoyer le produit. Il ne peut pas vous demander de vous débrouiller avec le transporteur.
+        
+        **Comment agir ?**
+        1. Contactez le SAV par mail pour signaler la non-réception. On vous demandera souvent une attestation sur l'honneur.
+        2. Si le vendeur refuse de rembourser en accusant le transporteur (ou vous-même).
+        3. **Générez une Mise en Demeure avec Justibot** pour exiger le remboursement sous 8 jours sous peine de poursuites.
+        """)
+        
+    with tab2:
+        st.header("Vol retardé ou annulé")
+        st.info("💡 **La règle d'or :** Vous avez droit à une indemnisation financière, même si la compagnie vous a remboursé ou échangé votre billet !")
+        st.markdown("""
+        **Que dit la loi ?**
+        Le règlement européen (CE) n° 261/2004 protège les passagers de manière très stricte. Si votre vol a plus de 3 heures de retard à l'arrivée, ou s'il est annulé moins de 14 jours avant le départ, vous pouvez réclamer :
+        * **250 €** pour les vols jusqu'à 1 500 km.
+        * **400 €** pour les vols entre 1 500 km et 3 500 km.
+        * **600 €** pour les vols de plus de 3 500 km.
+        
+        *(Exception : si le retard est dû à des "circonstances extraordinaires" comme une tempête imprévisible).*
+        
+        **Comment agir ?**
+        Faites d'abord une réclamation classique sur le site de la compagnie. Les compagnies font souvent traîner ou refusent sans motif valable. En cas de refus ou de silence, une mise en demeure formelle débloque généralement la situation.
+        """)
+        
+    with tab3:
+        st.header("Produit en panne ou défectueux")
+        st.info("💡 **La règle d'or :** La garantie légale de conformité dure 2 ans pour les produits neufs !")
+        st.markdown("""
+        **Que dit la loi ?**
+        Les articles L217-3 et suivants du Code de la consommation obligent le **vendeur** (et non le fabricant) à réparer, remplacer ou rembourser un produit qui tombe en panne dans les 2 ans suivant l'achat. 
+        Le plus puissant : pendant ces 2 ans, vous n'avez pas à prouver que le défaut existait lors de l'achat, la loi présume que c'est le cas !
+        
+        **Comment agir ?**
+        Rapportez le produit ou contactez le vendeur. S'il essaie de vous renvoyer vers le fabricant (une pratique illégale courante) ou refuse d'appliquer la garantie, une mise en demeure citant le Code de la consommation le forcera à respecter ses obligations.
+        """)
+        
+    with tab4:
+        st.header("Dépôt de garantie (caution) non rendu")
+        st.info("💡 **La règle d'or :** Le propriétaire ne peut pas conserver votre caution sans fournir de justificatifs (devis ou factures réelles).")
+        st.markdown("""
+        **Que dit la loi ?**
+        La loi du 6 juillet 1989 encadre très strictement les délais de restitution :
+        * **1 mois maximum** si l'état des lieux de sortie est identique à l'état des lieux d'entrée.
+        * **2 mois maximum** s'il y a des dégradations notées.
+        
+        **La pénalité de retard :**
+        Si le propriétaire dépasse ce délai, la loi prévoit que la somme due est majorée de **10 % du loyer hors charges pour chaque mois de retard entamé**.
+        
+        **Comment agir ?**
+        Dès le premier jour de retard, générez une mise en demeure exigeant la restitution immédiate des fonds, en n'oubliant pas de mentionner et d'exiger la pénalité de retard de 10% !
+        """)
 
-# --- NOUVELLE PAGE MENTIONS LÉGALES & CGV ---
 elif choix_page == "⚖️ Mentions Légales & CGV":
     st.title("⚖️ Mentions Légales & Conditions Générales de Vente")
     st.markdown("""
