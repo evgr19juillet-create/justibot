@@ -313,8 +313,12 @@ elif choix_page == "⚖️ Mentions Légales & CGV":
     st.title("⚖️ Mentions Légales & Conditions Générales de Vente")
     st.markdown("""
     ### 1. Éditeur du site
-    Ce site est édité et géré par **Valentin Remiot**, agissant en tant qu'éditeur de la solution logicielle Justibot.
-    * **Adresse :** 18 place du dr hugier, 51120 Sézanne, France.
+    Ce site est édité et géré par **Valentin Remiot**, avec le statut d'Entrepreneur individuel.
+    * **Nom commercial :** La Fabrique à Code
+    * **SIREN :** 920 771 953
+    * **SIRET :** 92077195300022
+    * **Code APE :** 6201Z - Programmation informatique
+    * **Adresse du siège :** 18 PLACE du Docteur Huguier, 51120 Sézanne, FRANCE
     * **Contact email :** valentin.jacques51210@gmail.com
     * **Hébergeur :** Le nom de domaine justibot.fr est hébergé par Hostinger. L'application est propulsée par Streamlit Community Cloud.
 
