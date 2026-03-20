@@ -8,6 +8,7 @@ from email import encoders
 from datetime import datetime
 import requests
 import uuid
+import streamlit.components.v1 as components  # <-- Ajout de l'import pour Google Analytics
 
 # --- 1. CONFIGURATION DE LA PAGE ---
 st.set_page_config(
@@ -16,6 +17,21 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# --- TRACKING GOOGLE ANALYTICS ---
+# Ce bloc invisible permet à Google Analytics de compter les visiteurs en temps réel
+GA_JS = """
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-19DFYMJ4NB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-19DFYMJ4NB');
+</script>
+"""
+components.html(GA_JS, height=0, width=0)
+# ---------------------------------
 
 # --- PROTECTION ANTI-COPIE ET NETTOYAGE LEGER ---
 st.markdown("""
